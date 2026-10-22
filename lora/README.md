@@ -25,7 +25,7 @@ limit Pages availability. Do not publish private training data or restricted pap
 ## Teaching plan
 
 Audience: learners comfortable with matrix multiplication and basic gradient descent.
-Suggested duration: 35–45 minutes. Students should be able to:
+Suggested duration: 45–55 minutes. Students should be able to:
 
 - Explain the dimensions of A and B and the distinction between model rank and update rank.
 - Calculate adapter parameters and identify when factorization stops saving parameters.
@@ -33,7 +33,7 @@ Suggested duration: 35–45 minutes. Students should be able to:
 - Describe initialization, frozen-weight training, scaling, and deployment choices.
 - Design an evaluation for language or diffusion adaptation without treating rank as a quality guarantee.
 
-Use sections 01–04 for exploration, then section 05 for prediction and discussion.
+Use sections 01–04, including the gradient lab (03B), for exploration, then section 05 for prediction and discussion.
 Ask learners to make a prediction before moving a control. Exercises include
 instructor notes in expandable disclosures. Use the numeric readouts alongside
 heatmaps so color is not the only way to interpret results.
@@ -60,3 +60,26 @@ internal anchors. Checked horizontal overflow at 375, 768, and 1,440 pixels;
 no browser JavaScript errors occurred. Desktop and phone layouts were inspected.
 The five lesson reference URLs resolved with HTTP 200 on 2026-10-22. This does
 not validate a training run or a deployed GitHub Pages site.
+
+## Forward/backward lab (03B)
+
+Allow 10 additional minutes to predict and trace the first two SGD steps for each
+initialization. The fixed example has two inputs, one output, rank 1, scale 1,
+and half-squared-error loss. A and B updates use the same pre-update gradients.
+The reverse initialization is a comparison, not the original LoRA initialization.
+Ask why a nonzero error does not guarantee a nonzero adapter gradient, and why
+freezing weights does not mean blocking gradients through them. Students can
+inspect the numeric loss history alongside the chart. The 200-step cap bounds
+interactive history; it is not a convergence criterion.
+
+Run the dependency-free mathematical tests with Node.js:
+
+```sh
+node --test lora/tests/training-math.test.cjs
+```
+
+Tests cover finite-difference gradients, first-step asymmetry, both-zero stalling,
+simultaneous updates, frozen weights, and finite loss across the allowed learning
+rates. Browser checks cover all initialization modes, gradient revelation, updates,
+run/reset controls, history, the step cap, and responsive layouts. The new lab
+requires no installation beyond a browser for learners.
