@@ -9,8 +9,8 @@ python -m http.server 8000 --bind 127.0.0.1
 ```
 
 Visit `/lora/` on that local server. No package installation, CDN, font download,
-GPU, model weights, or API credentials are required. This is a conceptual lesson;
-it does not train a model. Source links require external access.
+GPU, model weights, or API credentials are required. This lesson trains tiny synthetic linear models in the browser;
+it does not train an LLM or diffusion model. Source links require external access.
 
 ## GitHub Pages
 
@@ -18,22 +18,25 @@ Commit and push the site files, then in the repository's **Settings → Pages**,
 choose **Deploy from a branch**, select the branch containing these files
 (usually `main`), and choose **/ (root)**. The lesson will be served at
 `https://mmorrisj.github.io/professional_development/lora/` after deployment.
-This URL is the intended deployment location, not a claim that it is published.
+The site is published at this URL. Pushing changes to `main` triggers its Pages deployment.
 No Actions workflow or build step is needed. Repository visibility and plan can
 limit Pages availability. Do not publish private training data or restricted papers.
 
 ## Teaching plan
 
 Audience: learners comfortable with matrix multiplication and basic gradient descent.
-Suggested duration: 45–55 minutes. Students should be able to:
+Suggested duration: 60–70 minutes. Students should be able to:
 
 - Explain the dimensions of A and B and the distinction between model rank and update rank.
 - Calculate adapter parameters and identify when factorization stops saving parameters.
 - Explain why a concentrated singular-value spectrum favors low-rank approximation.
 - Describe initialization, frozen-weight training, scaling, and deployment choices.
+- Distinguish fitting a sample from learning a rule that transfers to held-out examples.
+- Explain why missing variation in training data can leave an unlearned feature effect.
 - Design an evaluation for language or diffusion adaptation without treating rank as a quality guarantee.
 
-Use sections 01–04, including the gradient lab (03B), for exploration, then section 05 for prediction and discussion.
+Use sections 01–04, including the audience adaptation task (03A) and gradient lab
+(03B), for exploration, then section 05 for prediction and discussion.
 Ask learners to make a prediction before moving a control. Exercises include
 instructor notes in expandable disclosures. Use the numeric readouts alongside
 heatmaps so color is not the only way to interpret results.
@@ -83,3 +86,53 @@ simultaneous updates, frozen weights, and finite loss across the allowed learnin
 rates. Browser checks cover all initialization modes, gradient revelation, updates,
 run/reset controls, history, the step cap, and responsive layouts. The new lab
 requires no installation beyond a browser for learners.
+
+## Audience adaptation task (03A)
+
+Start here when asking “what is learned?” Four supplied caption features map to
+two invented audience scores. The frozen base is an authored 2 × 4 linear map,
+not a pretrained language model. A rank-1 adapter learns a shared feature direction
+and two output strengths, using 6 trainable parameters instead of 8 dense updates.
+Targets come from an authored rank-1 rule; that rule is never given to the optimizer.
+
+The varied training set contains 16 corner combinations in four dimensions; the
+limited set contains 8 combinations with jargon fixed at zero. Eight fixed
+held-out examples have intermediate feature values and are distinct from both
+training sets. The examples are deterministic, original teaching data; no external
+dataset, human preference ratings, credentials, or model weights are involved.
+
+Full-batch gradient descent minimizes `sum_i ||prediction_i - target_i||² / (2N)`
+with learning rate 0.1 and simultaneous factor updates. The original W stays
+fixed. After 200 steps, the varied condition fits the authored rule to numerical
+precision. The limited condition fits training examples but cannot identify the
+jargon effect; its held-out RMSE remains about 0.239 versus the frozen baseline's
+0.379. These are reproducible results from this constructed task, not empirical
+claims about real caption quality. The two conditions differ in sample count as
+well as coverage; they isolate missing jargon information mathematically, not a
+controlled empirical estimate of the benefit of dataset diversity.
+
+Suggested activity (15 minutes):
+
+1. Identify the inputs, outputs, fixed weights, trainable values, and target rule.
+2. Predict whether the initialized adapter changes the frozen prediction.
+3. Train the varied condition. Compare train and held-out RMSE; switch the adapter
+   off for individual test examples and inspect the learned update matrix.
+4. Repeat with limited coverage. Explain the training/test gap using the jargon
+   column. More steps cannot supply information absent from the examples.
+5. State what this supports (transfer within a known linear task) and what it
+   cannot support (human preference learning or LLM performance).
+
+The visible held-out set supports teaching. For real experiments, use a validation
+set for iterative choices and reserve a separate test set for final evaluation.
+A and B are not uniquely identifiable: compare BA with the target update rather
+than expecting the learned factors to match the authored factorization.
+
+Run all mathematical tests:
+
+```sh
+node --test lora/tests/*.test.cjs
+```
+
+The adaptation tests check all six gradients against finite differences, initial
+baseline equivalence, first-step behavior, learned update recovery, held-out
+predictions, the missing-feature limitation, and disjoint datasets.
